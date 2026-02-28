@@ -1,13 +1,5 @@
 #include "7Semi_ENS210.h"
-#include <math.h>
 
-/**
- * Constructor
- *
- * - Stores I2C device address
- * - Does not initialize I2C
- * - begin() must be called before use
- */
 ENS210_7Semi::ENS210_7Semi() {
 
 }
@@ -43,7 +35,7 @@ bool ENS210_7Semi::begin(uint8_t i2cAddress,
      * Other platforms use default I2C pins
      */
     i2c->begin();
-    (void)sda;
+    (void)sda;a
     (void)scl;
 #endif
 
@@ -64,7 +56,22 @@ bool ENS210_7Semi::begin(uint8_t i2cAddress,
     /**
      * Perform sensor reset
      */
-    return reset();
+    if (!reset()) return false;
+
+    /*
+    * Disable low power mode
+    */
+    if (!writeReg(ENS210_REG_SYS_CTRL, 0x00))
+        return false;
+
+    /*
+    * Enable temperature + humidity engine
+    */
+    if (!writeReg(ENS210_REG_SENS_RUN, 0x03))
+        return false;
+    delay(150);  // allow first conversion
+
+    return true;
 }
 
 /**
@@ -74,7 +81,7 @@ bool ENS210_7Semi::begin(uint8_t i2cAddress,
  * - Waits for boot time
  */
 bool ENS210_7Semi::reset() {
-    if (!writeReg(ENS210_REG_SYS_CTRL, 128)) return false;
+    if (!writeReg(ENS210_REG_SYS_CTRL, 0x80)) return false;
     delay(ENS210_BOOTING_TIME_MS);
     return true;
 }
@@ -94,7 +101,16 @@ bool ENS210_7Semi::startSingleShot() {
  * - Enables automatic repeated measurements
  */
 bool ENS210_7Semi::startContinuous() {
-    return writeReg(ENS210_REG_SENS_RUN, 3);
+
+    // Enable temperature + humidity engine
+    if (!writeReg(ENS210_REG_SENS_RUN, 0x03))
+        return false;
+
+    // Trigger first measurement
+    if (!writeReg(ENS210_REG_SENS_START, 0x03))
+        return false;
+
+    return true;
 }
 
 /**
@@ -144,6 +160,14 @@ bool ENS210_7Semi::readRaw(uint32_t &temperature_raw,
 
     if (!readReg(ENS210_REG_T_VAL, buf, 6))
         return false;
+    Serial.print("Raw T/H bytes: ");
+    for (int i = 0; i < 6; i++) {
+        if (buf[i] < 0x10) Serial.print("0"); // leading zero for formatting
+        Serial.print(buf[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
+
 
     /*
      * -------- Temperature Extraction --------
@@ -289,7 +313,7 @@ bool ENS210_7Semi::readUID(uint8_t *uid) {
  * - Stores data into buffer
  */
 bool ENS210_7Semi::readReg(uint8_t reg, uint8_t *data, uint8_t len) {
-    if (!i2c) return false;
+    // if (!i2c) return false;
     i2c->beginTransmission(address);
     i2c->write(reg);
     if (i2c->endTransmission(false) != 0) return false;
@@ -313,8 +337,11 @@ bool ENS210_7Semi::readReg(uint8_t reg, uint8_t *data, uint8_t len) {
  */
 bool ENS210_7Semi::writeReg(uint8_t reg, uint8_t value) {
     if (!i2c) return false;
+
+    i2c->beginTransmission(address);
     i2c->write(reg);
     i2c->write(value);
+
     return (i2c->endTransmission() == 0);
 }
 
