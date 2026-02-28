@@ -160,13 +160,13 @@ bool ENS210_7Semi::readRaw(uint32_t &temperature_raw,
 
     if (!readReg(ENS210_REG_T_VAL, buf, 6))
         return false;
-    Serial.print("Raw T/H bytes: ");
-    for (int i = 0; i < 6; i++) {
-        if (buf[i] < 0x10) Serial.print("0"); // leading zero for formatting
-        Serial.print(buf[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
+    // Serial.print("Raw T/H bytes: ");
+    // for (int i = 0; i < 6; i++) {
+    //     if (buf[i] < 0x10) Serial.print("0"); // leading zero for formatting
+    //     Serial.print(buf[i], HEX);
+    //     Serial.print(" ");
+    // }
+    // Serial.println();
 
 
     /*
