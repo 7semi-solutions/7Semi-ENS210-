@@ -35,7 +35,7 @@ bool ENS210_7Semi::begin(uint8_t i2cAddress,
      * Other platforms use default I2C pins
      */
     i2c->begin();
-    (void)sda;a
+    (void)sda;
     (void)scl;
 #endif
 
